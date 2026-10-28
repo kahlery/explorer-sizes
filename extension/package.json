@@ -23,8 +23,15 @@
       }
     ]
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kahlery/explorer-sizes"
-  }
+  "license": "MIT",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "explorer",
+    "file size",
+    "folder size",
+    "size",
+    "zebra"
+  ]
 }
