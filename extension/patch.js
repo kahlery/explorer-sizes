@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 
 // The patch's own version: a file patched by an earlier one is patched again from its original.
-const MARK = "/*explorer-sizes:7*/";
+const MARK = "/*explorer-sizes:8*/";
 const ANY_MARK = "/*explorer-sizes";
 const ID = "[\\w$]+";
 
@@ -45,8 +45,9 @@ function regex(pattern, replace) {
 // merged into the side bar's title, when the Explorer is the only view open there). VS Code rewrites the title's
 // text as it changes, so there the total is an attribute its CSS shows after the text (see HIDE_TOTAL). Read from the extension's own status bar item (its element's id ends in
 // "explorerSizes.total", its text "exfilon 1.3 GB", which works without the patch), and written into a span of its own
-// after each name, every 2 s (as cheap as a few lookups). It leans on the page, not on VS Code's code, so it is the
-// same in every version. A failure is logged, tagged.
+// after each name. It runs only when the title bar, the status bar or the side bar change (watched for that, once
+// they are there, and at most once a frame), never while VS Code sits idle. It leans on the page, not on VS Code's
+// code, so it is the same in every version. A failure is logged, tagged.
 const TOTAL = `;${MARK}(()=>{const put=(n,v)=>{let e=n.parentElement.querySelector(":scope>.explorer-sizes-total");` +
   `if(!e){if(!v)return;e=document.createElement("span");e.className="explorer-sizes-total";n.after(e)}` +
   `e.textContent!==v&&(e.textContent=v)};` +
@@ -56,7 +57,12 @@ const TOTAL = `;${MARK}(()=>{const put=(n,v)=>{let e=n.parentElement.querySelect
   `v?n.dataset.explorerSizesTotal!==v&&(n.dataset.explorerSizesTotal=v):delete n.dataset.explorerSizesTotal;` +
   `for(const h of document.querySelectorAll(".pane-header:not(.hidden)")){const n=h.querySelector("h3.title");` +
   `n&&h.parentElement?.querySelector(".explorer-folders-view")&&put(n,v)}}` +
-  `catch(x){console.error("[explorer-sizes]",x)}};setInterval(t,2000);t()})();`;
+  `catch(x){console.error("[explorer-sizes]",x)}};` +
+  `let q=0;const run=()=>{q||(q=1,requestAnimationFrame(()=>{q=0;t()}))};` +
+  `const watch=()=>{const p=document.querySelectorAll(".part.titlebar,.part.statusbar,.part.sidebar");` +
+  `if(p.length<3)return setTimeout(watch,500);const o=new MutationObserver(run);` +
+  `for(const e of p)o.observe(e,{childList:!0,subtree:!0,characterData:!0,attributes:!0,attributeFilter:["class"]});t()};` +
+  `watch()})();`;
 
 // Each file's changes, each with the mark that shows it is already made.
 const badge = regex(BADGE_CHECK, (_, rest) => "!1" + MARK + rest);

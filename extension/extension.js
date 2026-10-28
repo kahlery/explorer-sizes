@@ -6,6 +6,7 @@ const path = require("path");
 const patch = require("./patch");
 
 const sizes = new Map(); // path -> bytes, a folder's being everything under it
+const folders = new Set(); // the paths in sizes that are folders
 const pending = new Map(); // path -> the walk working it out
 const changed = new vscode.EventEmitter();
 
@@ -31,6 +32,7 @@ function sizeOf(p) {
     if (!stat) return undefined;
     let total = stat.size;
     if (stat.isDirectory()) {
+      folders.add(p);
       const names = await limited(() => fs.readdir(p)).catch(() => []);
       const parts = await Promise.all(names.map((name) => sizeOf(path.join(p, name))));
       total = parts.reduce((sum, bytes) => sum + (bytes || 0), 0);
@@ -63,11 +65,17 @@ function inWorkspace(p) {
   });
 }
 
-// A change somewhere: forget it, whatever was under it, and the folders above it, and redraw those.
+// A change somewhere: forget it, whatever was under it, and the folders above it, and redraw those. Only a folder
+// has anything under it to forget, so only a folder's change looks through everything known (a build or a checkout
+// changes thousands of files, each of which would otherwise go through it all).
 let queued = new Set(), timer;
 function forget(uri) {
   const p = uri.fsPath;
-  for (const key of sizes.keys()) if (key === p || key.startsWith(p + path.sep)) sizes.delete(key);
+  if (folders.has(p)) {
+    for (const key of sizes.keys()) if (key.startsWith(p + path.sep)) sizes.delete(key);
+    for (const key of folders) if (key === p || key.startsWith(p + path.sep)) folders.delete(key);
+  }
+  sizes.delete(p);
   pending.delete(p);
   for (let up = p; inWorkspace(up); up = path.dirname(up)) {
     sizes.delete(up);
@@ -132,6 +140,7 @@ function activate(context) {
     vscode.workspace.onDidChangeWorkspaceFolders(total),
     vscode.commands.registerCommand("explorerSizes.refresh", () => {
       sizes.clear();
+      folders.clear();
       pending.clear();
       changed.fire(undefined);
     }),
