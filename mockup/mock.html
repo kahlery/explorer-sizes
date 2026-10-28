@@ -1,0 +1,284 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Explorer Sizes mock-up</title>
+<!--
+  A mock-up of VS Code's Explorer with Explorer Sizes, for the Marketplace screenshots.
+  Query parameters:
+    theme=dark|light   Default Dark Modern / Default Light Modern (default dark)
+    sidebar=N          the side bar's width in CSS px, its right border included (default 300)
+    hover=NAME         the row under the mouse (none by default)
+    tooltip=1          the hovered row's tooltip, under it
+    select=NAME        the selected, focused row (default README.md; select= for none)
+    tabs=1|0           show the package.json tab beside README.md (default 1)
+  Render with render.sh.
+-->
+<style>
+  :root {
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    --mono: Menlo, Monaco, "Courier New", monospace;
+  }
+  body.dark {
+    --bg: #181818; --editor: #1f1f1f; --border: #2b2b2b; --fg: #cccccc;
+    --muted: #9d9d9d; --activity: #868686; --activity-active: #d7d7d7; --accent: #0078d4;
+    --search-bg: #313131; --search-border: #3c3c3c; --search-fg: #9d9d9d;
+    --hover: #2a2d2e; --sel: #37373d; --focus: #0078d4;
+    --git: #e2c08d; --guide: #333333; --chevron: #cccccc;
+    --lineno: #6e7681; --md-head: #569cd6; --md-code: #ce9178; --md-link: #3794ff; --md-dash: #6796e6;
+    --breadcrumb: #a9a9a9; --tab-inactive: #9d9d9d;
+    --hover-bg: #202020; --hover-border: #454545; --hover-shadow: rgba(0, 0, 0, .36);
+  }
+  body.light {
+    --bg: #f8f8f8; --editor: #ffffff; --border: #e5e5e5; --fg: #3b3b3b;
+    --muted: #868686; --activity: #616161; --activity-active: #1f1f1f; --accent: #005fb8;
+    --search-bg: #ffffff; --search-border: #cecece; --search-fg: #717171;
+    --hover: #f2f2f2; --sel: #e4e6f1; --focus: #005fb8;
+    --git: #895503; --guide: #d9d9d9; --chevron: #3b3b3b;
+    --lineno: #6e7681; --md-head: #800000; --md-code: #a31515; --md-link: #0451a5; --md-dash: #0451a5;
+    --breadcrumb: #616161; --tab-inactive: #868686;
+    --hover-bg: #f8f8f8; --hover-border: #c8c8c8; --hover-shadow: rgba(0, 0, 0, .16);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: var(--bg); color: var(--fg); font: 13px/22px var(--font); -webkit-font-smoothing: antialiased; }
+  svg { display: block; flex-shrink: 0; }
+  .abs { position: absolute; }
+
+  #title { left: 0; right: 0; top: 0; height: 35px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .light-dot { position: absolute; top: 11px; width: 12px; height: 12px; border-radius: 50%; }
+  #search { position: absolute; top: 5px; height: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--search-bg); border: 1px solid var(--search-border); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--search-fg); font-size: 13px; }
+
+  #activity { left: 0; top: 35px; bottom: 22px; width: 48px; border-right: 1px solid var(--border); }
+  #activity .item { position: absolute; left: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--activity); }
+  #activity .item.active { color: var(--activity-active); }
+  #activity .item.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+
+  #sidebar { left: 48px; top: 35px; bottom: 22px; border-right: 1px solid var(--border); overflow: hidden; }
+  #sidebar .header { height: 35px; padding-left: 20px; display: flex; align-items: center; font-size: 11px; position: relative; }
+  #sidebar .header .more { position: absolute; right: 13px; top: 9px; }
+  #heading { height: 22px; position: relative; display: flex; align-items: center; font-size: 11px; }
+  #heading .chev { position: absolute; left: 2px; top: 3px; }
+  #heading .name { position: absolute; left: 20px; font-weight: 700; }
+  #heading .total { opacity: .6; margin-left: 6px; font-weight: 400; }
+  #heading .actions { position: absolute; right: 9px; top: 2px; display: flex; gap: 2px; }
+  #heading .actions span { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+  #tree { position: relative; }
+  .row { position: relative; height: 22px; white-space: nowrap; }
+  .row.hover { background: var(--hover); }
+  .row.sel { background: var(--sel); }
+  .row.sel::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--focus); }
+  .row .twistie { position: absolute; top: 3px; }
+  .row .icon { position: absolute; top: 3px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+  .row .label { position: absolute; }
+  .row .size { position: absolute; right: 16px; opacity: .75; font-size: 12.35px; }
+  .row.git .label, .row.git .size { color: var(--git); }
+  .guide { position: absolute; width: 1px; background: var(--guide); }
+
+  #editor { top: 35px; bottom: 22px; right: 0; background: var(--editor); overflow: hidden; }
+  #tabs { height: 35px; background: var(--bg); display: flex; border-bottom: 1px solid var(--border); position: relative; }
+  .tab { height: 35px; display: flex; align-items: center; padding: 0 10px 0 12px; gap: 6px; border-right: 1px solid var(--border); color: var(--tab-inactive); font-size: 13px; position: relative; white-space: nowrap; }
+  .tab.active { background: var(--editor); color: var(--fg); margin-bottom: -1px; height: 35px; }
+  .tab.active::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--accent); }
+  .tab .close { margin-left: 4px; }
+  #breadcrumb { height: 22px; display: flex; align-items: center; gap: 4px; padding-left: 15px; color: var(--breadcrumb); font-size: 13px; white-space: nowrap; }
+  #code { font: 12px/18px var(--mono); white-space: pre; position: relative; padding-top: 2px; }
+  #code .ln { position: absolute; width: 26px; text-align: right; color: var(--lineno); }
+  #code .tx { position: absolute; left: 52px; }
+  .h { color: var(--md-head); font-weight: 700; }
+  .c { color: var(--md-code); }
+  .l { color: var(--md-link); }
+  .d { color: var(--md-dash); }
+
+  #status { left: 0; right: 0; bottom: 0; height: 22px; border-top: 1px solid var(--border); background: var(--bg);
+    font-size: 12px; line-height: 21px; display: flex; align-items: center; padding: 0 10px 0 8px; white-space: nowrap; }
+  #status .item { display: flex; align-items: center; gap: 3px; margin-right: 12px; }
+  #status .right { margin-left: auto; display: flex; }
+  #status .right .item { margin: 0 0 0 14px; }
+
+  #tooltip { position: absolute; background: var(--hover-bg); border: 1px solid var(--hover-border); border-radius: 4px;
+    box-shadow: 0 2px 8px var(--hover-shadow); padding: 0 8px; height: 28px; line-height: 26px; font-size: 13px; white-space: nowrap; z-index: 5; }
+  #tooltip .arrow { position: absolute; top: -5px; width: 8px; height: 8px; background: var(--hover-bg);
+    border-left: 1px solid var(--hover-border); border-top: 1px solid var(--hover-border); transform: rotate(45deg); }
+</style>
+</head>
+<body>
+<div id="title" class="abs">
+  <div class="light-dot" style="left:13px;background:#ff5f57"></div>
+  <div class="light-dot" style="left:33px;background:#febc2e"></div>
+  <div class="light-dot" style="left:53px;background:#28c840"></div>
+  <div id="search">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.2 10.2 15 15"/></svg>
+    <span>exfilon.io</span>
+  </div>
+</div>
+<div id="activity" class="abs"></div>
+<div id="sidebar" class="abs">
+  <div class="header">EXPLORER<span class="more"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.1"/><circle cx="8" cy="8" r="1.1"/><circle cx="13" cy="8" r="1.1"/></svg></span></div>
+  <div id="heading">
+    <span class="chev"></span>
+    <span class="name">EXFILON.IO<span class="total">1.2 GB</span></span>
+    <span class="actions"></span>
+  </div>
+  <div id="tree"></div>
+</div>
+<div id="editor" class="abs">
+  <div id="tabs"></div>
+  <div id="breadcrumb"></div>
+  <div id="code"></div>
+</div>
+<div id="status" class="abs">
+  <span class="item"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M3 14 C5 9 10 9 12 3"/><path d="M8 4h5"/></svg>main*</span>
+  <span class="item"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="6.3"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg>0
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-left:3px"><path d="M8 1.8 15 14.2H1z"/><path d="M8 6.5v3.8M8 11.6v1"/></svg>0</span>
+  <span class="right">
+    <span class="item">Ln 1, Col 1</span><span class="item">Spaces: 2</span><span class="item">UTF-8</span><span class="item">LF</span><span class="item">Markdown</span>
+  </span>
+</div>
+<script>
+const q = new URLSearchParams(location.search);
+const theme = q.get('theme') === 'light' ? 'light' : 'dark';
+const SW = +(q.get('sidebar') || 300);
+const hover = q.get('hover');
+const select = q.has('select') ? q.get('select') : 'README.md';
+document.body.className = theme;
+
+// --- icons -----------------------------------------------------------------
+const chevRight = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--chevron)" stroke-width="1.2"><path d="M6 3.5 10.5 8 6 12.5"/></svg>';
+const chevDown = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--chevron)" stroke-width="1.2"><path d="M3.5 6 8 10.5 12.5 6"/></svg>';
+const icons = {
+  md: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#519aba" stroke-width="1.7" stroke-linejoin="round"><path d="M1.5 12V4.5l3 4 3-4V12"/><path d="M12 4v7.5M9.5 9.2 12 11.8l2.5-2.6"/></svg>',
+  json: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#cbcb41" stroke-width="1.5" stroke-linecap="round"><path d="M5.5 2.5C3.8 2.5 4.2 4.5 4.2 6S3.5 8 2.5 8c1 0 1.7.5 1.7 2s-.4 3.5 1.3 3.5"/><path d="M10.5 2.5c1.7 0 1.3 2 1.3 3.5s.7 2 1.7 2c-1 0-1.7.5-1.7 2s.4 3.5-1.3 3.5"/></svg>',
+  py: '<svg width="16" height="16" viewBox="0 0 16 16"><path fill="#519aba" d="M7.9 1C5 1 5.2 2.3 5.2 2.3v1.4H8v.5H3.9S2 4 2 6.9s1.6 2.8 1.6 2.8h1V8.3s-.1-1.6 1.6-1.6h2.7s1.5 0 1.5-1.5V2.6S10.6 1 7.9 1zM6.4 1.9a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1z"/><path fill="#cbcb41" d="M8.1 15c2.9 0 2.7-1.3 2.7-1.3v-1.4H8v-.5h4.1S14 12 14 9.1s-1.6-2.8-1.6-2.8h-1v1.4s.1 1.6-1.6 1.6H7.1s-1.5 0-1.5 1.5v2.6S5.4 15 8.1 15zm1.5-.9a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/></svg>',
+  glb: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#a074c4" stroke-width="1.3" stroke-linejoin="round"><path d="M8 1.5 14 4.8v6.4L8 14.5 2 11.2V4.8z"/><path d="M2 4.8 8 8l6-3.2M8 8v6.5"/></svg>',
+  git: '<svg width="17" height="17" viewBox="0 0 16 16"><path fill="#688592" d="M8 .6 15.4 8 8 15.4.6 8z"/><g fill="none" stroke="var(--bg)" stroke-width="1.2"><path d="M5.2 4.8 9.6 9.2M7 6.6v5"/></g><g fill="var(--bg)"><circle cx="7" cy="11.4" r="1.1"/><circle cx="7" cy="6.6" r="1.1"/><circle cx="9.8" cy="9.4" r="1.1"/></g></svg>',
+  license: '<svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="#cbcb41" stroke-width="1.4"><circle cx="7" cy="5.5" r="4"/><path d="M4.3 8.6 3.5 15 7 13l3.5 2-.8-6.4"/></svg>',
+};
+
+// --- activity bar ----------------------------------------------------------
+const act = [
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 5.5V3.5h7l5 5V18a1 1 0 0 1-1 1h-3"/><path d="M15 3.5v5h5"/><rect x="4" y="7" width="12" height="14" rx="1"/></svg>',
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="6.5"/><path d="M14.8 14.8 21 21"/></svg>',
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="4.5" r="2"/><circle cx="6" cy="19.5" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 6.5v11M18 10c0 4-12 3-12 7.5"/></svg>',
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M6 4v16l13-8z"/></svg>',
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="9.5" height="9.5"/><rect x="3" y="3" width="9.5" height="8"/><rect x="12.5" y="11" width="8.5" height="9.5"/><rect x="13.5" y="2.5" width="8" height="8"/></svg>',
+];
+document.getElementById('activity').innerHTML = act.map((s, i) =>
+  `<div class="item${i === 0 ? ' active' : ''}" style="top:${i * 48}px">${s}</div>`).join('');
+
+// --- side bar --------------------------------------------------------------
+const sidebar = document.getElementById('sidebar');
+sidebar.style.width = SW + 'px';
+document.querySelector('#heading .chev').innerHTML = chevDown;
+document.querySelector('#heading .actions').innerHTML = [
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M9.5 14.5H3.5v-13h5l3.5 3.5v3"/><path d="M8.5 1.5v4h3.5M12.5 10v5M10 12.5h5"/></svg>',
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M1.5 3h4.5l1.5 1.5h7v9h-13z"/><path d="M8 7.5v5M5.5 10h5"/></svg>',
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M13.2 8.6A5.3 5.3 0 1 1 11 3.6"/><path d="M11.5 1v3.2H8.3"/></svg>',
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="1.5" y="5.5" width="9" height="9"/><path d="M4.5 5.5v-3h10v10h-4M4 10h4"/></svg>',
+].map(s => `<span>${s}</span>`).join('');
+
+// level, name, kind (open | closed | file icon), size, git-modified
+const T = [
+  [0, '.claude', 'closed', '2.1 MB'],
+  [0, '.git', 'closed', '830 MB'],
+  [0, '.github', 'closed', '14 KB'],
+  [0, 'assets', 'open', '120 MB', 1],
+  [1, 'fonts', 'closed', '1.9 MB'],
+  [1, 'maps', 'open', '118 MB', 1],
+  [2, 'avuc-koyu', 'closed', '46.3 MB'],
+  [2, 'new-city', 'open', '71.8 MB', 1],
+  [3, 'textures', 'closed', '52.4 MB', 1],
+  [3, 'build_new_city.py', 'py', '38 KB'],
+  [3, 'manifest.json', 'json', '6.1 KB'],
+  [3, 'new_city.glb', 'glb', '19.3 MB'],
+  [0, 'client', 'closed', '250 MB'],
+  [0, 'server', 'closed', '17 MB'],
+  [0, '.gitignore', 'git', '412 B'],
+  [0, 'LICENSE', 'license', '1.1 KB'],
+  [0, 'package.json', 'json', '812 B'],
+  [0, 'README.md', 'md', '4.2 KB'],
+];
+const tree = document.getElementById('tree');
+let html = '';
+T.forEach(([lv, name, kind, size, git], i) => {
+  const folder = kind === 'open' || kind === 'closed';
+  const cls = ['row'];
+  if (git) cls.push('git');
+  if (name === hover) cls.push('hover');
+  if (name === select) cls.push('sel');
+  html += `<div class="${cls.join(' ')}" data-name="${name}">`;
+  if (folder) {
+    html += `<span class="twistie" style="left:${8 + 8 * lv}px">${kind === 'open' ? chevDown : chevRight}</span>`;
+    html += `<span class="label" style="left:${30 + 8 * lv}px">${name}</span>`;
+  } else {
+    html += `<span class="icon" style="left:${30 + 8 * lv}px">${icons[kind]}</span>`;
+    html += `<span class="label" style="left:${52 + 8 * lv}px">${name}</span>`;
+  }
+  html += `<span class="size">${size}</span></div>`;
+});
+// indent guides: under each open folder, down its descendants, at its twistie's centre
+T.forEach(([lv, , kind], i) => {
+  if (kind !== 'open') return;
+  let j = i + 1;
+  while (j < T.length && T[j][0] > lv) j++;
+  html += `<div class="guide" style="left:${16 + 8 * lv}px;top:${(i + 1) * 22}px;height:${(j - i - 1) * 22}px"></div>`;
+});
+tree.innerHTML = html;
+
+// --- editor ----------------------------------------------------------------
+const editor = document.getElementById('editor');
+editor.style.left = (48 + SW) + 'px';
+let tabs = `<div class="tab active">${icons.md}<span>README.md</span><span class="close"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 4l8 8M12 4l-8 8"/></svg></span></div>`;
+if (q.get('tabs') !== '0') tabs += `<div class="tab" style="padding-right:12px">${icons.json.replace('stroke="#cbcb41"', 'stroke="#cbcb41" opacity=".75"')}<span>package.json</span></div>`;
+document.getElementById('tabs').innerHTML = tabs;
+document.getElementById('breadcrumb').innerHTML = `${icons.md}<span>README.md</span><span>›</span><span># exfilon.io</span>`;
+
+const L = [
+  '<span class="h"># exfilon.io</span>',
+  '',
+  'A top-down extraction shooter: drop into a map, loot, and get',
+  'out before the quarantine closes.',
+  '',
+  '<span class="h">## Layout</span>',
+  '',
+  '<span class="d">-</span> <span class="c">`client/`</span>: the Godot 4 game client',
+  '<span class="d">-</span> <span class="c">`server/`</span>: the Go game server (authoritative)',
+  '<span class="d">-</span> <span class="c">`assets/maps/`</span>: Blender sources and their builds',
+  '',
+  '<span class="h">## Run it</span>',
+  '',
+  '<span class="c">```sh</span>',
+  '<span class="c">cd server &amp;&amp; go run ./cmd/exfilon</span>',
+  '<span class="c">godot --path client</span>',
+  '<span class="c">```</span>',
+  '',
+  'Maps are rebuilt with <span class="c">`build_&lt;map&gt;.py`</span>, see',
+  '<span class="l">[assets/maps](assets/maps)</span>.',
+];
+document.getElementById('code').innerHTML = L.map((t, i) =>
+  `<div style="position:relative;height:18px"><span class="ln">${i + 1}</span><span class="tx">${t}</span></div>`).join('');
+
+// --- title bar search box ----------------------------------------------------
+document.getElementById('search').style.width = Math.round(innerWidth * 0.38) + 'px';
+
+// --- tooltip -----------------------------------------------------------------
+if (hover && q.get('tooltip') === '1') {
+  const i = T.findIndex(r => r[1] === hover);
+  const row = tree.children[i];
+  const r = row.getBoundingClientRect();
+  const [lv, name, kind, size] = T[i];
+  const bytes = { '.git': '870,318,104' }[name] || '';
+  const tip = document.createElement('div');
+  tip.id = 'tooltip';
+  tip.innerHTML = `~/repos/exfilon.io/${name} • ${size}${bytes ? ` (${bytes} bytes)` : ''}<span class="arrow"></span>`;
+  document.body.appendChild(tip);
+  const left = r.left + 30;
+  tip.style.left = left + 'px';
+  tip.style.top = (r.bottom + 8) + 'px';
+  tip.querySelector('.arrow').style.left = (r.left + 55 - left - 4) + 'px';
+}
+</script>
+</body>
+</html>
