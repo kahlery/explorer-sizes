@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9be8d3"/>
+      <stop offset="1" stop-color="#7fb8f7"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffdc7a"/>
+      <stop offset="1" stop-color="#ffc24d"/>
+    </linearGradient>
+    <clipPath id="folder">
+      <rect x="40" y="88" width="176" height="124" rx="22"/>
+    </clipPath>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <!-- the folder's tab and back -->
+  <path d="M40 92 Q40 64 64 64 H104 Q114 64 120 72 L128 82 H192 Q216 82 216 104 V120 H40 Z" fill="#f2a93b"/>
+  <!-- its front, striped -->
+  <rect x="40" y="88" width="176" height="124" rx="22" fill="url(#body)"/>
+  <g clip-path="url(#folder)" fill="#ffffff" opacity="0.28">
+    <rect x="40" y="110" width="176" height="14"/>
+    <rect x="40" y="152" width="176" height="14"/>
+    <rect x="40" y="194" width="176" height="14"/>
+  </g>
+  <!-- the face -->
+  <ellipse cx="98" cy="146" rx="11" ry="14" fill="#3d2c2a"/>
+  <ellipse cx="158" cy="146" rx="11" ry="14" fill="#3d2c2a"/>
+  <circle cx="102" cy="140" r="4.5" fill="#ffffff"/>
+  <circle cx="162" cy="140" r="4.5" fill="#ffffff"/>
+  <ellipse cx="80" cy="170" rx="13" ry="8" fill="#ff8f9c" opacity="0.7"/>
+  <ellipse cx="176" cy="170" rx="13" ry="8" fill="#ff8f9c" opacity="0.7"/>
+  <path d="M116 168 Q128 180 140 168" fill="none" stroke="#3d2c2a" stroke-width="6" stroke-linecap="round"/>
+  <!-- the size tag it carries -->
+  <g transform="rotate(14 196 64)">
+    <rect x="160" y="44" width="76" height="40" rx="20" fill="#ffffff"/>
+    <circle cx="176" cy="64" r="5" fill="#7fb8f7"/>
+    <text x="207" y="73" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="25" fill="#3d2c2a">MB</text>
+  </g>
+</svg>

@@ -14,12 +14,17 @@ manifest = f"""<?xml version="1.0" encoding="utf-8"?>
   </Metadata>
   <Installation><InstallationTarget Id="Microsoft.VisualStudio.Code"/></Installation>
   <Dependencies/>
-  <Assets><Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true"/></Assets>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true"/>
+    <Asset Type="Microsoft.VisualStudio.Services.Icons.Default" Path="extension/icon.png" Addressable="true"/>
+  </Assets>
 </PackageManifest>
 """
 types = ('<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
          '<Default Extension=".json" ContentType="application/json"/><Default Extension=".js" ContentType="application/javascript"/>'
-         '<Default Extension=".vsixmanifest" ContentType="text/xml"/></Types>')
+         '<Default Extension=".vsixmanifest" ContentType="text/xml"/><Default Extension=".png" ContentType="image/png"/>'
+         '<Default Extension=".md" ContentType="text/markdown"/><Default Extension=".txt" ContentType="text/plain"/>'
+         '<Default Extension="" ContentType="text/plain"/></Types>')
 vsix = os.path.join(HERE, "explorer-sizes.vsix")
 with zipfile.ZipFile(vsix, "w", zipfile.ZIP_DEFLATED) as z:
     z.writestr("[Content_Types].xml", types)
