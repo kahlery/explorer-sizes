@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 
 // The patch's own version: a file patched by an earlier one is patched again from its original.
-const MARK = "/*explorer-sizes:6*/";
+const MARK = "/*explorer-sizes:7*/";
 const ANY_MARK = "/*explorer-sizes";
 const ID = "[\\w$]+";
 
@@ -29,7 +29,8 @@ const BUBBLE = new RegExp(
 // total is styled as a pane heading's own description is.
 const HIDE_TOTAL = `${MARK}.statusbar-item[id$="explorerSizes.total"]{display:none!important}` +
   `.explorer-sizes-total{flex-shrink:0;font-weight:400;margin-left:6px;opacity:.6;text-transform:none;white-space:nowrap}` +
-  `.pane-header .explorer-sizes-total{margin-left:10px}`;
+  `.pane-header .explorer-sizes-total{margin-left:10px}` +
+  `[data-explorer-sizes-total]::after{content:attr(data-explorer-sizes-total);font-weight:400;margin-left:6px;opacity:.6}`;
 
 // An edit: the text it gives in place of `s` and how many places it found (anything but 1 is VS Code changed).
 function regex(pattern, replace) {
@@ -39,9 +40,10 @@ function regex(pattern, replace) {
   };
 }
 
-// The total, put beside the open folder's name at the top: in the title bar's command center ("exfilon 1.3 GB"), and
-// in the Explorer's own heading when that is shown (VS Code hides it, merged into the side bar's title, when the
-// Explorer is the only view open there). Read from the extension's own status bar item (its element's id ends in
+// The total, put beside the open folder's name at the top: after the window's title ("exfilon 1.3 GB") or the title
+// bar's command center when that is on, and in the Explorer's own heading when that is shown (VS Code hides it,
+// merged into the side bar's title, when the Explorer is the only view open there). VS Code rewrites the title's
+// text as it changes, so there the total is an attribute its CSS shows after the text (see HIDE_TOTAL). Read from the extension's own status bar item (its element's id ends in
 // "explorerSizes.total", its text "exfilon 1.3 GB", which works without the patch), and written into a span of its own
 // after each name, every 2 s (as cheap as a few lookups). It leans on the page, not on VS Code's code, so it is the
 // same in every version. A failure is logged, tagged.
@@ -50,7 +52,8 @@ const TOTAL = `;${MARK}(()=>{const put=(n,v)=>{let e=n.parentElement.querySelect
   `e.textContent!==v&&(e.textContent=v)};` +
   `const t=()=>{try{const i=document.querySelector('.statusbar-item[id$="explorerSizes.total"]'),` +
   `m=/([\\d.,]+ [KMGT]?B)\\s*$/.exec(i?.textContent||""),v=m?m[1]:"";` +
-  `for(const n of document.querySelectorAll(".command-center .search-label"))put(n,v);` +
+  `for(const n of document.querySelectorAll(".part.titlebar .window-title:not(:has(.command-center)),.command-center .search-label"))` +
+  `v?n.dataset.explorerSizesTotal!==v&&(n.dataset.explorerSizesTotal=v):delete n.dataset.explorerSizesTotal;` +
   `for(const h of document.querySelectorAll(".pane-header:not(.hidden)")){const n=h.querySelector("h3.title");` +
   `n&&h.parentElement?.querySelector(".explorer-folders-view")&&put(n,v)}}` +
   `catch(x){console.error("[explorer-sizes]",x)}};setInterval(t,2000);t()})();`;

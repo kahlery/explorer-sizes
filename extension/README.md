@@ -10,8 +10,8 @@ right of its row in VS Code's own Explorer, and the open folder's total beside i
 - **A size on every row.** Files and folders alike (`830 MB`, `4.2 KB`, `812 B`), a folder's being everything under
   it, worked out in the background and kept up to date as files change.
 - **The exact count of bytes** in each row's tooltip.
-- **The open folder's total** beside its name at the top: in the title bar's command center (`exfilon 1.2 GB`), and
-  in the Explorer's heading when that is shown. Should the patch be missing, it shows in the status bar instead
+- **The open folder's total** beside its name at the top: after the window's title (`exfilon 1.2 GB`), or in the
+  command center when that is on, and in the Explorer's heading when that is shown. Should the patch be missing, it shows in the status bar instead
   (click it to work every size out again).
 - **Git colours kept.** A folder with changed files under it shows its size in git's colour instead of the usual dot.
 - No new view and no settings: it is the Explorer you already use.
