@@ -1,7 +1,7 @@
 # Explorer Sizes
 
 A VS Code extension: every file's and folder's size at the right of its row in the Explorer (the exact count of bytes
-in its tooltip), the open folder's total in the Explorer's heading, and zebra rows.
+in its tooltip), the open folder's total in the status bar, and zebra rows.
 
 ![Explorer Sizes](images/explorer-dark.png)
 

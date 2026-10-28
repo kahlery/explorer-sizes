@@ -97,8 +97,44 @@ function patchVSCode() {
   return ready;
 }
 
+// The open folders' total in the status bar ("exfilon.io 1.2 GB"; several folders, "3 folders 2.4 GB"), the exact
+// count of bytes in its tooltip; a click works every size out again. It needs no patch.
+function showTotal(item) {
+  let shown = 0;
+  return async () => {
+    const folders = vscode.workspace.workspaceFolders || [];
+    if (!folders.length) return item.hide();
+    const asked = ++shown;
+    const parts = await Promise.all(folders.map((folder) => sizeOf(folder.uri.fsPath)));
+    if (asked !== shown) return;
+    const bytes = parts.reduce((sum, b) => sum + (b || 0), 0);
+    const name = folders.length === 1 ? folders[0].name : `${folders.length} folders`;
+    item.text = `$(folder) ${name} ${human(bytes)}`;
+    item.tooltip = `${name}: ${human(bytes)} (${bytes.toLocaleString("en-US")} bytes). Click to work the sizes out again.`;
+    item.show();
+  };
+}
+
 function activate(context) {
+  const item = vscode.window.createStatusBarItem("explorerSizes.total", vscode.StatusBarAlignment.Left, -100);
+  item.name = "Explorer Sizes: Total";
+  item.command = "explorerSizes.refresh";
+  const total = showTotal(item);
+  const watcher = vscode.workspace.createFileSystemWatcher("**/*");
+  watcher.onDidCreate(forget);
+  watcher.onDidChange(forget);
+  watcher.onDidDelete(forget);
   context.subscriptions.push(
+    item,
+    watcher,
+    changed,
+    changed.event(total),
+    vscode.workspace.onDidChangeWorkspaceFolders(total),
+    vscode.commands.registerCommand("explorerSizes.refresh", () => {
+      sizes.clear();
+      pending.clear();
+      changed.fire(undefined);
+    }),
     vscode.commands.registerCommand("explorerSizes.undoPatch", () => {
       const restored = patch.undo(vscode.env.appRoot);
       vscode.window.showInformationMessage(restored.length
@@ -106,6 +142,7 @@ function activate(context) {
         : "VS Code was not patched.");
     }),
   );
+  total();
   // Without the patch VS Code turns the sizes away (and logs an error for each), so none are given until it is in.
   if (!patchVSCode()) return;
   context.subscriptions.push(
@@ -117,19 +154,6 @@ function activate(context) {
         if (bytes === undefined) return undefined;
         return new vscode.FileDecoration(human(bytes), `${human(bytes)} (${bytes.toLocaleString("en-US")} bytes)`);
       },
-    }),
-  );
-  const watcher = vscode.workspace.createFileSystemWatcher("**/*");
-  watcher.onDidCreate(forget);
-  watcher.onDidChange(forget);
-  watcher.onDidDelete(forget);
-  context.subscriptions.push(
-    watcher,
-    changed,
-    vscode.commands.registerCommand("explorerSizes.refresh", () => {
-      sizes.clear();
-      pending.clear();
-      changed.fire(undefined);
     }),
   );
 }

@@ -1,7 +1,7 @@
 # Explorer Sizes
 
 **See what takes up the space, right where your files are.** Explorer Sizes puts every file's and folder's size at the
-right of its row in VS Code's own Explorer, the open folder's total in the Explorer's heading, and soft zebra stripes
+right of its row in VS Code's own Explorer, the open folder's total in the status bar, and soft zebra stripes
 to keep your eye on the line.
 
 ![Explorer Sizes in Default Dark Modern](images/explorer-dark.png)
@@ -11,7 +11,7 @@ to keep your eye on the line.
 - **A size on every row.** Files and folders alike (`830 MB`, `4.2 KB`, `812 B`), a folder's being everything under
   it, worked out in the background and kept up to date as files change.
 - **The exact count of bytes** in each row's tooltip.
-- **The open folder's total** beside its name in the Explorer's heading (`EXFILON.IO  1.2 GB`).
+- **The open folder's total** in the status bar (`exfilon.io 1.2 GB`; click it to work every size out again).
 - **Git colours kept.** A folder with changed files under it shows its size in git's colour instead of the usual dot.
 - **Zebra rows.** Every other row lightly tinted from the theme's own foreground colour, so they suit any theme.
 - No new view and no settings: it is the Explorer you already use.
@@ -26,8 +26,8 @@ VS Code lets an extension put only a character or two beside a name in the Explo
 away. To show it anyway, Explorer Sizes changes VS Code's own installed files. Please read this before installing.
 
 - **What changes:** the extension host's check on a badge's length is taken out; a folder with git changes under it
-  keeps its own badge (its size) instead of git's dot; the Explorer's heading gets the folder's total; a line of CSS
-  draws the stripes. Nothing else.
+  keeps its own badge (its size) instead of git's dot; a line of CSS draws the stripes. Nothing else. (The status
+  bar's total needs no patch.)
 - **Originals are kept** beside each changed file as `<name>.orig`.
 - **Checksums are updated.** VS Code keeps checksums of its files in `product.json`; they are brought up to date, so
   VS Code does not report its installation as corrupt.
@@ -49,7 +49,7 @@ Nothing is sent anywhere: sizes come from reading your workspace's files on your
 
 - Folders VS Code's file watcher skips (`files.watcherExclude`, e.g. `node_modules` or `.git/objects` by default)
   still show their size, but it does not follow changes inside them by itself: run **Explorer Sizes: Refresh**.
-- The heading's total is shown when a single folder is open.
+- With several folders open, the status bar shows their sum (`3 folders 2.4 GB`).
 
 ## License
 
