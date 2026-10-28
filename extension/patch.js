@@ -6,16 +6,16 @@
 // 1. The extension host turns away a decoration badge longer than a character or two: that check is taken out.
 // 2. A folder with changed files under it (git) shows only a dot in place of its badge: such a folder keeps its own
 //    badge (its size) instead, coloured as git colours it.
-// 3. The Explorer's heading has the open folder's total size beside it.
-// 4. Zebra rows in the Explorer.
-// 5. product.json's checksums of the files changed are brought up to date, so VS Code does not call itself corrupt.
+// 3. The Explorer's heading has the open folder's total size beside it (read from the extension's status bar item,
+//    which is hidden then).
+// 4. product.json's checksums of the files changed are brought up to date, so VS Code does not call itself corrupt.
 // The original of each file is kept beside it as <name>.orig (--undo puts them back).
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
 // The patch's own version: a file patched by an earlier one is patched again from its original.
-const MARK = "/*explorer-sizes:3*/";
+const MARK = "/*explorer-sizes:4*/";
 const ANY_MARK = "/*explorer-sizes";
 const ID = "[\\w$]+";
 
@@ -26,13 +26,9 @@ const BUBBLE = new RegExp(
   "g",
 );
 const NAME = new RegExp(`get name\\(\\)\\{return this\\.(${ID})\\.getWorkspaceLabel\\(this\\.(${ID})\\.getWorkspace\\(\\)\\)\\}`, "g");
-const DECORATIONS = new RegExp(`this\\.B\\(this\\.(${ID})\\.registerDecorationsProvider\\(this\\.${ID}\\)\\)`, "g");
 const DESCRIPTION = new RegExp(`(${ID})\\(e\\)\\{this\\.${ID}\\(e\\),this\\.${ID}\\(this\\.${ID},e\\),this\\.${ID}=e,this\\.${ID}\\.fire\\(\\)\\}`, "g");
-// Stripes on the rows' container, which scrolls with them (each row is 22 px; a list's rows are reused, so a row
-// cannot tell odd from even itself).
-// (!important: the list's own style for its background, a shorthand, is the more specific and would take it away.)
-const ZEBRA = `${MARK}.explorer-folders-view .monaco-list-rows{background-image:repeating-linear-gradient(to bottom,` +
-  `transparent 0 22px,color-mix(in srgb,var(--vscode-foreground) 5%,transparent) 22px 44px)!important}`;
+// The extension's status bar item, read for the heading's total (see rootSize), is hidden once VS Code is patched.
+const HIDE_TOTAL = `${MARK}.statusbar-item[id$="explorerSizes.total"]{display:none!important}`;
 
 // An edit: the text it gives in place of `s` and how many places it found (anything but 1 is VS Code changed).
 function regex(pattern, replace) {
@@ -42,18 +38,19 @@ function regex(pattern, replace) {
   };
 }
 
+// The heading's total is read from the extension's own status bar item (its element's id ends in
+// "explorerSizes.total", its text "exfilon.io 1.3 GB"), which works without the patch and is hidden with it; read every
+// 2 s, as cheap as a lookup. A failure is logged to the console, tagged [explorer-sizes].
 function rootSize(s) {
-  const names = [...s.matchAll(NAME)], decorations = [...s.matchAll(DECORATIONS)], descriptions = [...s.matchAll(DESCRIPTION)];
-  if (names.length !== 1 || decorations.length !== 1 || descriptions.length !== 1) return [s, 0];
-  const [, label, workspace] = names[0], deco = decorations[0][1], describe = descriptions[0][1];
-  // Shown again on every change of decorations (cheap: the root's is looked up, not worked out) and, while the
-  // extension may still be starting, every 2 s for the first minute. A failure is logged, tagged, to the console.
-  const show = `const __es=()=>{try{const f=this.${workspace}.getWorkspace().folders;if(f.length!==1)return;` +
-    `const t=this.${deco}.getDecoration(f[0].uri,!1)?.tooltip||"",m=/([\\d.,]+ [KMGT]?B) \\(/.exec(t),v=m?m[1]:void 0;` +
+  const names = [...s.matchAll(NAME)], descriptions = [...s.matchAll(DESCRIPTION)];
+  if (names.length !== 1 || descriptions.length !== 1) return [s, 0];
+  const [, label, workspace] = names[0], describe = descriptions[0][1];
+  const show = `const __es=()=>{try{const i=document.querySelector('.statusbar-item[id$="explorerSizes.total"]'),` +
+    `m=/([\\d.,]+ [KMGT]?B)\\s*$/.exec(i?.textContent||""),v=m?m[1]:void 0;` +
     `v!==this.__esShown&&(this.__esShown=v,this.${describe}(v))}catch(x){console.error("[explorer-sizes]",x)}};`;
   const getter = `get name(){${MARK}this.__es||(this.__es=1,setTimeout(()=>{${show}` +
-    `this.B(this.${deco}.onDidChangeDecorations(()=>__es()));let n=0;const r=setInterval(()=>{__es();++n>=30&&clearInterval(r)},2000);` +
-    `__es()},0));return this.${label}.getWorkspaceLabel(this.${workspace}.getWorkspace())}`;
+    `this.B({dispose:clearInterval.bind(null,setInterval(__es,2000))});__es()},0));` +
+    `return this.${label}.getWorkspaceLabel(this.${workspace}.getWorkspace())}`;
   return [s.replace(NAME, () => getter), 1];
 }
 
@@ -62,7 +59,7 @@ const badge = regex(BADGE_CHECK, (_, rest) => "!1" + MARK + rest);
 const PATCHES = {
   "vs/workbench/api/node/extensionHostProcess.js": [["!1" + MARK, badge]],
   "vs/workbench/api/worker/extensionHostWorkerMain.js": [["!1" + MARK, badge]],
-  "vs/workbench/workbench.desktop.main.css": [[MARK + ".explorer-folders-view", (s) => [s + "\n" + ZEBRA + "\n", 1]]],
+  "vs/workbench/workbench.desktop.main.css": [[MARK + ".statusbar-item", (s) => [s + "\n" + HIDE_TOTAL + "\n", 1]]],
   "vs/workbench/workbench.desktop.main.js": [
     [`if(t){${MARK}`, regex(BUBBLE, (m, on, found, tree, uri, entry, d, pend, list, children) =>
       `if(${on}){${MARK}const __own=${list}.some(x=>x.letter);const ${found}=this.${tree}.findSuperstr(${uri});` +
