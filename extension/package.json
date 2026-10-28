@@ -2,7 +2,7 @@
   "name": "explorer-sizes",
   "displayName": "Explorer Sizes",
   "description": "Every file's and folder's size beside its name in VS Code's Explorer, the open folder's total in its heading, zebra rows (it patches VS Code to do so)",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "kahlery",
   "engines": {
     "vscode": "^1.80.0"

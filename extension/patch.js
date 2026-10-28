@@ -14,7 +14,9 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-const MARK = "/*explorer-sizes*/";
+// The patch's own version: a file patched by an earlier one is patched again from its original.
+const MARK = "/*explorer-sizes:3*/";
+const ANY_MARK = "/*explorer-sizes";
 const ID = "[\\w$]+";
 
 const BADGE_CHECK = new RegExp(`${ID}\\.badge\\.length>${ID}(\\)throw new Error\\("The 'badge'-property must be undefined or a short character"\\))`, "g");
@@ -28,8 +30,9 @@ const DECORATIONS = new RegExp(`this\\.B\\(this\\.(${ID})\\.registerDecorationsP
 const DESCRIPTION = new RegExp(`(${ID})\\(e\\)\\{this\\.${ID}\\(e\\),this\\.${ID}\\(this\\.${ID},e\\),this\\.${ID}=e,this\\.${ID}\\.fire\\(\\)\\}`, "g");
 // Stripes on the rows' container, which scrolls with them (each row is 22 px; a list's rows are reused, so a row
 // cannot tell odd from even itself).
+// (!important: the list's own style for its background, a shorthand, is the more specific and would take it away.)
 const ZEBRA = `${MARK}.explorer-folders-view .monaco-list-rows{background-image:repeating-linear-gradient(to bottom,` +
-  `transparent 0 22px,color-mix(in srgb,var(--vscode-foreground) 5%,transparent) 22px 44px)}`;
+  `transparent 0 22px,color-mix(in srgb,var(--vscode-foreground) 5%,transparent) 22px 44px)!important}`;
 
 // An edit: the text it gives in place of `s` and how many places it found (anything but 1 is VS Code changed).
 function regex(pattern, replace) {
@@ -43,11 +46,13 @@ function rootSize(s) {
   const names = [...s.matchAll(NAME)], decorations = [...s.matchAll(DECORATIONS)], descriptions = [...s.matchAll(DESCRIPTION)];
   if (names.length !== 1 || decorations.length !== 1 || descriptions.length !== 1) return [s, 0];
   const [, label, workspace] = names[0], deco = decorations[0][1], describe = descriptions[0][1];
-  const show = `const __es=()=>{const f=this.${workspace}.getWorkspace().folders;if(f.length!==1)return;` +
-    `const t=this.${deco}.getDecoration(f[0].uri,!1)?.tooltip||"",m=/([\\d.,]+ [KMGT]?B) \\(/.exec(t);` +
-    `this.${describe}(m?m[1]:void 0)};`;
-  const getter = `get name(){${MARK}this.__es||(this.__es=1,setTimeout(()=>{${show}this.B(this.${deco}.onDidChangeDecorations(` +
-    `e=>{const f=this.${workspace}.getWorkspace().folders;f.length===1&&e.affectsResource(f[0].uri)&&__es()}));` +
+  // Shown again on every change of decorations (cheap: the root's is looked up, not worked out) and, while the
+  // extension may still be starting, every 2 s for the first minute. A failure is logged, tagged, to the console.
+  const show = `const __es=()=>{try{const f=this.${workspace}.getWorkspace().folders;if(f.length!==1)return;` +
+    `const t=this.${deco}.getDecoration(f[0].uri,!1)?.tooltip||"",m=/([\\d.,]+ [KMGT]?B) \\(/.exec(t),v=m?m[1]:void 0;` +
+    `v!==this.__esShown&&(this.__esShown=v,this.${describe}(v))}catch(x){console.error("[explorer-sizes]",x)}};`;
+  const getter = `get name(){${MARK}this.__es||(this.__es=1,setTimeout(()=>{${show}` +
+    `this.B(this.${deco}.onDidChangeDecorations(()=>__es()));let n=0;const r=setInterval(()=>{__es();++n>=30&&clearInterval(r)},2000);` +
     `__es()},0));return this.${label}.getWorkspaceLabel(this.${workspace}.getWorkspace())}`;
   return [s.replace(NAME, () => getter), 1];
 }
@@ -95,7 +100,7 @@ function updateChecksums(app) {
 // Whether VS Code at `app` has the badge check taken out (the extension host started from it then allows long badges).
 function hostPatched(app) {
   try {
-    return fs.readFileSync(path.join(app, "out", HOST), "utf8").includes("!1" + MARK);
+    return fs.readFileSync(path.join(app, "out", HOST), "utf8").includes("!1" + ANY_MARK);
   } catch {
     return false;
   }
@@ -108,6 +113,10 @@ function apply(app) {
     const file = path.join(app, "out", rel);
     if (!fs.existsSync(file)) continue;
     let s = fs.readFileSync(file, "utf8"), made = 0;
+    if (s.includes(ANY_MARK) && !edits.every(([mark]) => s.includes(mark)) && fs.existsSync(file + ".orig")) {
+      s = fs.readFileSync(file + ".orig", "utf8");
+      made = 1;
+    }
     for (const [mark, edit] of edits) {
       if (s.includes(mark)) continue;
       const [next, found] = edit(s);
