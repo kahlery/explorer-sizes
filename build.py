@@ -29,6 +29,9 @@ vsix = os.path.join(HERE, "explorer-sizes.vsix")
 with zipfile.ZipFile(vsix, "w", zipfile.ZIP_DEFLATED) as z:
     z.writestr("[Content_Types].xml", types)
     z.writestr("extension.vsixmanifest", manifest)
-    for name in os.listdir(os.path.join(HERE, "extension")):
-        z.write(os.path.join(HERE, "extension", name), f"extension/{name}")
+    root = os.path.join(HERE, "extension")
+    for folder, _, names in os.walk(root):
+        for name in sorted(names):
+            path = os.path.join(folder, name)
+            z.write(path, "extension/" + os.path.relpath(path, root).replace(os.sep, "/"))
 subprocess.run(["code", "--install-extension", vsix, "--force"], check=True)
