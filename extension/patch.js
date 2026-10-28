@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 
 // The patch's own version: a file patched by an earlier one is patched again from its original.
-const MARK = "/*explorer-sizes:4*/";
+const MARK = "/*explorer-sizes:5*/";
 const ANY_MARK = "/*explorer-sizes";
 const ID = "[\\w$]+";
 
@@ -25,10 +25,10 @@ const BUBBLE = new RegExp(
     `for\\(const (${ID}) of \\5\\[1\\]\\.values\\(\\)\\)\\6&&!\\(\\6 instanceof (${ID})\\)&&\\6\\.bubble&&\\((${ID})\\.push\\(\\6\\),(${ID})=!0\\)\\}`,
   "g",
 );
-const NAME = new RegExp(`get name\\(\\)\\{return this\\.(${ID})\\.getWorkspaceLabel\\(this\\.(${ID})\\.getWorkspace\\(\\)\\)\\}`, "g");
-const DESCRIPTION = new RegExp(`(${ID})\\(e\\)\\{this\\.${ID}\\(e\\),this\\.${ID}\\(this\\.${ID},e\\),this\\.${ID}=e,this\\.${ID}\\.fire\\(\\)\\}`, "g");
-// The extension's status bar item, read for the heading's total (see rootSize), is hidden once VS Code is patched.
-const HIDE_TOTAL = `${MARK}.statusbar-item[id$="explorerSizes.total"]{display:none!important}`;
+// The extension's status bar item, read for the heading's total (see TOTAL), is hidden once VS Code is patched; the
+// total is styled as a pane heading's own description is.
+const HIDE_TOTAL = `${MARK}.statusbar-item[id$="explorerSizes.total"]{display:none!important}` +
+  `.pane-header .explorer-sizes-total{flex-shrink:0;font-weight:400;margin-left:10px;opacity:.6;text-transform:none;white-space:nowrap}`;
 
 // An edit: the text it gives in place of `s` and how many places it found (anything but 1 is VS Code changed).
 function regex(pattern, replace) {
@@ -38,21 +38,16 @@ function regex(pattern, replace) {
   };
 }
 
-// The heading's total is read from the extension's own status bar item (its element's id ends in
-// "explorerSizes.total", its text "exfilon.io 1.3 GB"), which works without the patch and is hidden with it; read every
-// 2 s, as cheap as a lookup. A failure is logged to the console, tagged [explorer-sizes].
-function rootSize(s) {
-  const names = [...s.matchAll(NAME)], descriptions = [...s.matchAll(DESCRIPTION)];
-  if (names.length !== 1 || descriptions.length !== 1) return [s, 0];
-  const [, label, workspace] = names[0], describe = descriptions[0][1];
-  const show = `const __es=()=>{try{const i=document.querySelector('.statusbar-item[id$="explorerSizes.total"]'),` +
-    `m=/([\\d.,]+ [KMGT]?B)\\s*$/.exec(i?.textContent||""),v=m?m[1]:void 0;` +
-    `v!==this.__esShown&&(this.__esShown=v,this.${describe}(v))}catch(x){console.error("[explorer-sizes]",x)}};`;
-  const getter = `get name(){${MARK}this.__es||(this.__es=1,setTimeout(()=>{${show}` +
-    `this.B({dispose:clearInterval.bind(null,setInterval(__es,2000))});__es()},0));` +
-    `return this.${label}.getWorkspaceLabel(this.${workspace}.getWorkspace())}`;
-  return [s.replace(NAME, () => getter), 1];
-}
+// The heading's total, put beside the open folder's name at the top of the Explorer: read from the extension's own
+// status bar item (its element's id ends in "explorerSizes.total", its text "exfilon 1.3 GB", which works without the
+// patch), and written into a span of its own after the heading's title, every 2 s (as cheap as two lookups). It
+// leans on the page, not on VS Code's code, so it is the same in every version. A failure is logged, tagged.
+const TOTAL = `;${MARK}(()=>{const t=()=>{try{const i=document.querySelector('.statusbar-item[id$="explorerSizes.total"]'),` +
+  `m=/([\\d.,]+ [KMGT]?B)\\s*$/.exec(i?.textContent||""),v=m?m[1]:"";` +
+  `for(const h of document.querySelectorAll(".pane-header")){if(!h.parentElement?.querySelector(".explorer-folders-view"))continue;` +
+  `let e=h.querySelector(".explorer-sizes-total");if(!e){const n=h.querySelector("h3.title");if(!n||!v)continue;` +
+  `e=document.createElement("span");e.className="explorer-sizes-total";n.after(e)}e.textContent!==v&&(e.textContent=v)}}` +
+  `catch(x){console.error("[explorer-sizes]",x)}};setInterval(t,2000);t()})();`;
 
 // Each file's changes, each with the mark that shows it is already made.
 const badge = regex(BADGE_CHECK, (_, rest) => "!1" + MARK + rest);
@@ -65,7 +60,7 @@ const PATCHES = {
       `if(${on}){${MARK}const __own=${list}.some(x=>x.letter);const ${found}=this.${tree}.findSuperstr(${uri});` +
       `if(${found})for(const ${entry} of ${found})for(const ${d} of ${entry}[1].values())${d}&&!(${d} instanceof ${pend})` +
       `&&${d}.bubble&&(__own?${list}.push({...${d},letter:void 0}):(${list}.push(${d}),${children}=!0))}`)],
-    ["get name(){" + MARK, rootSize],
+    [";" + MARK + "(()=>", (s) => [s + "\n" + TOTAL + "\n", 1]],
   ],
 };
 const HOST = "vs/workbench/api/node/extensionHostProcess.js";
