@@ -115,7 +115,7 @@ function activate(context) {
         if (uri.scheme !== "file" || !inWorkspace(uri.fsPath)) return undefined;
         const bytes = await sizeOf(uri.fsPath);
         if (bytes === undefined) return undefined;
-        return new vscode.FileDecoration(human(bytes), `${human(bytes)} (${bytes.toLocaleString("tr-TR")} bayt)`);
+        return new vscode.FileDecoration(human(bytes), `${human(bytes)} (${bytes.toLocaleString("en-US")} bytes)`);
       },
     }),
   );

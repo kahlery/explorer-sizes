@@ -2,7 +2,7 @@
   "name": "explorer-sizes",
   "displayName": "Explorer Sizes",
   "description": "Every file's and folder's size beside its name in VS Code's Explorer, the open folder's total in its heading, zebra rows (it patches VS Code to do so)",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "kahlery",
   "engines": {
     "vscode": "^1.80.0"
@@ -34,5 +34,13 @@
     "size",
     "zebra"
   ],
-  "icon": "icon.png"
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kahlery/explorer-sizes"
+  },
+  "bugs": {
+    "url": "https://github.com/kahlery/explorer-sizes/issues"
+  },
+  "homepage": "https://github.com/kahlery/explorer-sizes#readme"
 }

@@ -37,8 +37,8 @@ npx @vscode/vsce publish
 ```
 
 `vsce` packs `extension/` itself, as publisher `kahlery`. The Marketplace page's screenshots are linked relatively
-(`images/…`, a copy of the top-level `images/` kept in `extension/images/`); `vsce` turns relative links into URLs
-under the repository, which must then be public, or be given with `--baseImagesUrl <public URL of extension/>`.
+(`images/…`, a copy of the top-level `images/` kept in `extension/images/`); `vsce` turns them into links into this
+(public) repository, where the top-level `images/` answers them.
 
 ## Undo
 
