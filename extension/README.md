@@ -10,8 +10,9 @@ right of its row in VS Code's own Explorer, and the open folder's total beside i
 - **A size on every row.** Files and folders alike (`830 MB`, `4.2 KB`, `812 B`), a folder's being everything under
   it, worked out in the background and kept up to date as files change.
 - **The exact count of bytes** in each row's tooltip.
-- **The open folder's total** beside its name in the Explorer's heading (`EXFILON.IO  1.2 GB`). Should the patch be
-  missing, it shows in the status bar instead (`exfilon.io 1.2 GB`; click it to work every size out again).
+- **The open folder's total** beside its name at the top: in the title bar's command center (`exfilon 1.2 GB`), and
+  in the Explorer's heading when that is shown. Should the patch be missing, it shows in the status bar instead
+  (click it to work every size out again).
 - **Git colours kept.** A folder with changed files under it shows its size in git's colour instead of the usual dot.
 - No new view and no settings: it is the Explorer you already use.
 
@@ -25,8 +26,8 @@ VS Code lets an extension put only a character or two beside a name in the Explo
 away. To show it anyway, Explorer Sizes changes VS Code's own installed files. Please read this before installing.
 
 - **What changes:** the extension host's check on a badge's length is taken out; a folder with git changes under it
-  keeps its own badge (its size) instead of git's dot; the Explorer's heading shows the folder's total (and the
-  status bar's copy of it is hidden). Nothing else.
+  keeps its own badge (its size) instead of git's dot; the title bar and the Explorer's heading show the folder's
+  total (and the status bar's copy of it is hidden). Nothing else.
 - **Originals are kept** beside each changed file as `<name>.orig`.
 - **Checksums are updated.** VS Code keeps checksums of its files in `product.json`; they are brought up to date, so
   VS Code does not report its installation as corrupt.

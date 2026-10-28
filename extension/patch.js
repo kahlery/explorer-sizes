@@ -6,8 +6,8 @@
 // 1. The extension host turns away a decoration badge longer than a character or two: that check is taken out.
 // 2. A folder with changed files under it (git) shows only a dot in place of its badge: such a folder keeps its own
 //    badge (its size) instead, coloured as git colours it.
-// 3. The Explorer's heading has the open folder's total size beside it (read from the extension's status bar item,
-//    which is hidden then).
+// 3. The open folder's total size beside its name at the top: in the title bar's command center, and in the
+//    Explorer's heading when that is shown (read from the extension's status bar item, which is hidden then).
 // 4. product.json's checksums of the files changed are brought up to date, so VS Code does not call itself corrupt.
 // The original of each file is kept beside it as <name>.orig (--undo puts them back).
 const crypto = require("crypto");
@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 
 // The patch's own version: a file patched by an earlier one is patched again from its original.
-const MARK = "/*explorer-sizes:5*/";
+const MARK = "/*explorer-sizes:6*/";
 const ANY_MARK = "/*explorer-sizes";
 const ID = "[\\w$]+";
 
@@ -28,7 +28,8 @@ const BUBBLE = new RegExp(
 // The extension's status bar item, read for the heading's total (see TOTAL), is hidden once VS Code is patched; the
 // total is styled as a pane heading's own description is.
 const HIDE_TOTAL = `${MARK}.statusbar-item[id$="explorerSizes.total"]{display:none!important}` +
-  `.pane-header .explorer-sizes-total{flex-shrink:0;font-weight:400;margin-left:10px;opacity:.6;text-transform:none;white-space:nowrap}`;
+  `.explorer-sizes-total{flex-shrink:0;font-weight:400;margin-left:6px;opacity:.6;text-transform:none;white-space:nowrap}` +
+  `.pane-header .explorer-sizes-total{margin-left:10px}`;
 
 // An edit: the text it gives in place of `s` and how many places it found (anything but 1 is VS Code changed).
 function regex(pattern, replace) {
@@ -38,15 +39,20 @@ function regex(pattern, replace) {
   };
 }
 
-// The heading's total, put beside the open folder's name at the top of the Explorer: read from the extension's own
-// status bar item (its element's id ends in "explorerSizes.total", its text "exfilon 1.3 GB", which works without the
-// patch), and written into a span of its own after the heading's title, every 2 s (as cheap as two lookups). It
-// leans on the page, not on VS Code's code, so it is the same in every version. A failure is logged, tagged.
-const TOTAL = `;${MARK}(()=>{const t=()=>{try{const i=document.querySelector('.statusbar-item[id$="explorerSizes.total"]'),` +
+// The total, put beside the open folder's name at the top: in the title bar's command center ("exfilon 1.3 GB"), and
+// in the Explorer's own heading when that is shown (VS Code hides it, merged into the side bar's title, when the
+// Explorer is the only view open there). Read from the extension's own status bar item (its element's id ends in
+// "explorerSizes.total", its text "exfilon 1.3 GB", which works without the patch), and written into a span of its own
+// after each name, every 2 s (as cheap as a few lookups). It leans on the page, not on VS Code's code, so it is the
+// same in every version. A failure is logged, tagged.
+const TOTAL = `;${MARK}(()=>{const put=(n,v)=>{let e=n.parentElement.querySelector(":scope>.explorer-sizes-total");` +
+  `if(!e){if(!v)return;e=document.createElement("span");e.className="explorer-sizes-total";n.after(e)}` +
+  `e.textContent!==v&&(e.textContent=v)};` +
+  `const t=()=>{try{const i=document.querySelector('.statusbar-item[id$="explorerSizes.total"]'),` +
   `m=/([\\d.,]+ [KMGT]?B)\\s*$/.exec(i?.textContent||""),v=m?m[1]:"";` +
-  `for(const h of document.querySelectorAll(".pane-header")){if(!h.parentElement?.querySelector(".explorer-folders-view"))continue;` +
-  `let e=h.querySelector(".explorer-sizes-total");if(!e){const n=h.querySelector("h3.title");if(!n||!v)continue;` +
-  `e=document.createElement("span");e.className="explorer-sizes-total";n.after(e)}e.textContent!==v&&(e.textContent=v)}}` +
+  `for(const n of document.querySelectorAll(".command-center .search-label"))put(n,v);` +
+  `for(const h of document.querySelectorAll(".pane-header:not(.hidden)")){const n=h.querySelector("h3.title");` +
+  `n&&h.parentElement?.querySelector(".explorer-folders-view")&&put(n,v)}}` +
   `catch(x){console.error("[explorer-sizes]",x)}};setInterval(t,2000);t()})();`;
 
 // Each file's changes, each with the mark that shows it is already made.
